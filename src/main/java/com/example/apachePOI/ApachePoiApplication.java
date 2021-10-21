@@ -62,34 +62,51 @@ public class ApachePoiApplication implements CommandLineRunner {
 			XSSFWorkbook wb = new XSSFWorkbook(fis);
 			XSSFSheet sheet = wb.getSheetAt(0);
 			Iterator<Row> itr = sheet.iterator();
+			int rowNumber = 0;
 			while (itr.hasNext()) {
 				try {
 					Row row = itr.next();
+					rowNumber++;
 					PushMail pushMail = new PushMail();
 					//DataFormatter formatter = new DataFormatter();
 					//String val = formatter.formatCellValue(row.getCell(1));
-					pushMail.setCustomerName(row.getCell(0).getRichStringCellValue().getString());
-					Cell cell1 = row.getCell(1);
-					switch (cell1.getCellType()) {
-						case STRING: // field that represents string cell type
-							pushMail.setAccountID(cell1.getRichStringCellValue().getString());
-							break;
-						case NUMERIC: // field that represents number cell type
-							pushMail.setAccountID(String.valueOf(cell1.getNumericCellValue()));
-							break;
-						default:
+					Cell cell0 = row.getCell(0);
+					if(cell0 == null){
+						LOG.info("cell0 is null for row number: " + rowNumber);
+					}else {
+						pushMail.setCustomerName(cell0.getRichStringCellValue().getString());
 					}
+					Cell cell1 = row.getCell(1);
+					if(cell1 == null){
+						LOG.info("cell1 is null for row number: " + rowNumber);
+					}else {
+						switch (cell1.getCellType()) {
+							case STRING: // field that represents string cell type
+								pushMail.setAccountID(cell1.getRichStringCellValue().getString());
+								break;
+							case NUMERIC: // field that represents number cell type
+								pushMail.setAccountID(String.valueOf(cell1.getNumericCellValue()));
+								break;
+							default:
+						}
+					}
+
 					//pushMail.setAccountID(val);
-					pushMail.setConfigurationName(row.getCell(2).getRichStringCellValue().getString());
+					Cell cell2 = row.getCell(2);
+					if(cell2 == null){
+						LOG.info("cell2 is null for row number: " + rowNumber);
+					}else {
+						pushMail.setConfigurationName(cell2.getRichStringCellValue().getString());
+					}
 					Cell cell4 = row.getCell(4);
 					if(cell4 == null){
-						LOG.info("cell4 is null for accountID" + pushMail.getAccountID() + "configName: " + pushMail.getConfigurationName());
+						LOG.info("cell4 is null for row number: " + rowNumber);
 					}else {
-						pushMail.setCompiledEmail(row.getCell(4).getRichStringCellValue().getString());
+						pushMail.setCompiledEmail(cell4.getRichStringCellValue().getString());
 					}
 					pushMails.add(pushMail);
 				}catch (Exception e){
-					e.printStackTrace();
+					LOG.info(e.getMessage());
 				}
 
 			}
