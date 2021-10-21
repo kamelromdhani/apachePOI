@@ -1,9 +1,6 @@
 package com.example.apachePOI;
 
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.slf4j.Logger;
@@ -36,19 +33,72 @@ public class ApachePoiApplication implements CommandLineRunner {
 	public void run(String... args) {
 		LOG.info("EXECUTING : command line runner");
 
-		Student s1 = new Student(1, "Abhishek", "Kumar", "Maths");
-		Student s2 = new Student(2, "Robin", "Singh", "Maths");
-		Student s3 = new Student(3, "Prakash", "Soni", "Maths");
-		Student s4 = new Student(4, "Ayushi", "Agarwal", "Maths");
-		Student s5 = new Student(5, "Heena", "Verma", "Maths");
+		File original = new File("Original_request.xlsx");
+		File prod = new File("PushMails extracted from PROD.xlsx");
+		List<PushMail> originalPushMails = extractData(original);
+		List<PushMail> prodPushMails = extractData(prod);
+		List<PushMail> differences = findDiffereces(originalPushMails, prodPushMails);
 
-		studentInfo.add(s1);
-		studentInfo.add(s2);
-		studentInfo.add(s3);
-		studentInfo.add(s4);
-		studentInfo.add(s5);
-		writeExcelData();
-		readExcelData();
+		LOG.info(String.valueOf(differences.size()));
+
+	}
+
+	private static List<PushMail> findDiffereces(List<PushMail> originalPushMails, List<PushMail> prodPushMails){
+		List<PushMail> differences = new ArrayList<PushMail>();
+		for (PushMail originalPushMail : originalPushMails){
+			if (prodPushMails.contains(originalPushMail)) {
+				//LOG.info(originalPushMail.toString());
+				differences.add(originalPushMail);
+			}
+		}
+		return differences;
+
+	}
+
+	private static List<PushMail> extractData(File file){
+		List<PushMail> pushMails  = new ArrayList<PushMail>();
+		try {
+			FileInputStream fis = new FileInputStream(file);
+			XSSFWorkbook wb = new XSSFWorkbook(fis);
+			XSSFSheet sheet = wb.getSheetAt(0);
+			Iterator<Row> itr = sheet.iterator();
+			while (itr.hasNext()) {
+				try {
+					Row row = itr.next();
+					PushMail pushMail = new PushMail();
+					//DataFormatter formatter = new DataFormatter();
+					//String val = formatter.formatCellValue(row.getCell(1));
+					pushMail.setCustomerName(row.getCell(0).getRichStringCellValue().getString());
+					Cell cell1 = row.getCell(1);
+					switch (cell1.getCellType()) {
+						case STRING: // field that represents string cell type
+							pushMail.setAccountID(cell1.getRichStringCellValue().getString());
+							break;
+						case NUMERIC: // field that represents number cell type
+							pushMail.setAccountID(String.valueOf(cell1.getNumericCellValue()));
+							break;
+						default:
+					}
+					//pushMail.setAccountID(val);
+					pushMail.setConfigurationName(row.getCell(2).getRichStringCellValue().getString());
+					Cell cell4 = row.getCell(4);
+					if(cell4 == null){
+						LOG.info("cell4 is null for accountID" + pushMail.getAccountID() + "configName: " + pushMail.getConfigurationName());
+					}else {
+						pushMail.setCompiledEmail(row.getCell(4).getRichStringCellValue().getString());
+					}
+					pushMails.add(pushMail);
+				}catch (Exception e){
+					e.printStackTrace();
+				}
+
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+
+		return pushMails;
 	}
 
 	private static void writeExcelData() {
